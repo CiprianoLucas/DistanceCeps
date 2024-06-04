@@ -1,0 +1,18 @@
+FROM php:7.4-apache
+
+WORKDIR /usr/local
+
+RUN apt update
+RUN apt-get update && apt-get install -y git curl zip unzip
+
+RUN a2enmod rewrite
+RUN service apache2 restart
+
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app
+
+
+EXPOSE 80
+
+CMD ["apache2-foreground"]

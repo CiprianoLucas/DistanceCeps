@@ -1,0 +1,50 @@
+version: '3.1'
+
+services:
+  distance_cep:
+    platform: linux/amd64
+    build:
+      context: ./
+      dockerfile: DockerFile
+    container_name: distance_cep
+    image: registry.dev.datafreteapi.com/distance-cep:1.0.0
+    restart: always
+    working_dir: /app
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    volumes:
+      - ../src:/app
+
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_USER: lucas
+      MYSQL_PASSWORD: lucas
+      MYSQL_DATABASE: distance_cep
+    ports:
+      - '3306:3306'
+
+  apache:
+   image: php:7.4-apache
+   container_name: distance_cep_apache
+   restart: always
+   ports:
+      - "8000:80"
+   volumes:
+      - ../src:/app/www/
+      - ../src:/usr/local/apache2/htdocs
+      - ./apache:/conf/httpd.conf /usr/local/apache2/conf/httpd.conf
+   environment:
+      - APACHE_RUN_DIR=/var/run/apache2
+      - APACHE_PID_FILE=/var/run/apache2/apache2.pid
+      - APACHE_LOCK_DIR=/var/run/apache2
+      - APACHE_LOG_DIR=/var/log/apache2
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
+   command: >
+      bash -c "chmod -R 755 /usr/local/apache2/htdocs && chown -R www-data:www-data /usr/local/apache2/htdocs && apache2 -D FOREGROUND"
