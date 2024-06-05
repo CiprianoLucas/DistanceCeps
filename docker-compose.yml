@@ -9,9 +9,10 @@ services:
     container_name: distance_cep
     image: distance-cep:1.0.0
     restart: always
-    working_dir: /app
+    working_dir: /app/src
     volumes:
-      - ./src:/app
+      - ./src:/app/src
+      - ./public:/app/public
     deploy:
       resources:
         limits:
@@ -45,6 +46,8 @@ services:
    ports:
       - "8000:80"
    volumes:
+      - ./src:/var/www/src
+      - ./public:/var/www/html
       - ./src:/usr/local/apache2/htdocs
       - ./apache:/conf/httpd.conf /usr/local/apache2/conf/httpd.conf
    environment:
