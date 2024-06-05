@@ -20,7 +20,7 @@ return
         ],
         'test' => [
             'adapter' => 'mysql',
-            'host' => 'mysql',
+            'host' => 'mysql-container',
             'name' => 'distance_cep',
             'user' => 'root',
             'pass' => 'admin',
