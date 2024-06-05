@@ -12,7 +12,7 @@ services:
     working_dir: /app/src
     volumes:
       - ./src:/app/src
-      - ./public:/app/public
+      - ./html:/app/html
     deploy:
       resources:
         limits:
@@ -47,9 +47,9 @@ services:
       - "8000:80"
    volumes:
       - ./src:/var/www/src
-      - ./public:/var/www/html
+      - ./html:/var/www/html
       - ./src:/usr/local/apache2/htdocs
-      - ./apache:/conf/httpd.conf /usr/local/apache2/conf/httpd.conf
+      - ./apache/conf/ /usr/local/apache2/conf/
    environment:
       - APACHE_RUN_DIR=/var/run/apache2
       - APACHE_PID_FILE=/var/run/apache2/apache2.pid

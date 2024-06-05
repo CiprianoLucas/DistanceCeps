@@ -1,7 +1,7 @@
 FROM php:8.3-apache
 
 COPY src/ /var/www/src
-COPY public/ /var/www/public
+COPY html/ /var/www/html
 
 RUN apt-get update
 RUN apt-get install -y git curl zip unzip 
