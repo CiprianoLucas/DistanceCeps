@@ -7,7 +7,7 @@ services:
       context: ./
       dockerfile: DockerFile
     container_name: distance_cep
-    image: distance-cep
+    image: distance-cep:1.0.0
     restart: always
     working_dir: /app
     volumes:
@@ -17,6 +17,8 @@ services:
         limits:
           cpus: '1'
           memory: 2G
+    networks:
+      - mynetwork
 
   db:
     image: mysql
@@ -28,11 +30,15 @@ services:
       MYSQL_DATABASE: distance_cep
     ports:
       - '3306:3306'
+    networks:
+      - mynetwork
 
   apache:
    image: php:8.3-apache
    container_name: distance_cep_apache
    restart: always
+   networks:
+      - mynetwork
    ports:
       - "8000:80"
    volumes:
@@ -47,3 +53,7 @@ services:
       - APACHE_RUN_GROUP=www-data
    command: >
       bash -c "chmod -R 755 /usr/local/apache2/htdocs && chown -R www-data:www-data /usr/local/apache2/htdocs && apache2 -D FOREGROUND"
+
+networks:
+  mynetwork:
+    driver: bridge

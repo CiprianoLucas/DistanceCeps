@@ -1,7 +1,7 @@
-FROM distance-cep
+FROM php:8.3-apache
 
 COPY src/html /var/www/html
-COPY src/ /app
+COPY src /app
 
 RUN apt-get update
 RUN apt-get install -y git curl zip unzip 
@@ -12,11 +12,7 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 RUN a2enmod rewrite
 RUN service apache2 restart
 
-
-WORKDIR /app
-
-RUN composer install
-
 EXPOSE 80
+EXPOSE 3306
 
 CMD ["apache2-foreground"]

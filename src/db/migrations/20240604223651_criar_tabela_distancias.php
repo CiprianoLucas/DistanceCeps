@@ -26,9 +26,6 @@ final class CriarTabelaDistancias extends AbstractMigration
               ->addColumn('criacao', 'datetime', ['default' => 'CURRENT_TIMESTAMP'])
               ->addColumn('atualizacao', 'datetime', ['default' => 'CURRENT_TIMESTAMP', 'update' => 'CURRENT_TIMESTAMP'])
               ->addIndex(['cep_inicio', 'cep_fim'], ['unique' => true])
-              ->addValidator('distancia', 'greaterThan', ['value' => 0, 'message' => 'A distância deve ser maior que zero'])
-              ->addValidator('cep_inicio', 'integer', ['message' => 'CEP de início deve ser um valor numérico'])
-              ->addValidator('cep_fim', 'integer', ['message' => 'CEP de fim deve ser um valor numérico'])
               ->create();
     }
 }
