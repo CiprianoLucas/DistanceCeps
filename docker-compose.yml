@@ -7,16 +7,16 @@ services:
       context: ./
       dockerfile: DockerFile
     container_name: distance_cep
-    image: registry.dev.datafreteapi.com/distance-cep:1.0.0
+    image: distance-cep
     restart: always
     working_dir: /app
+    volumes:
+      - ./src:/app
     deploy:
       resources:
         limits:
           cpus: '1'
           memory: 2G
-    volumes:
-      - ../src:/app
 
   db:
     image: mysql
@@ -30,14 +30,13 @@ services:
       - '3306:3306'
 
   apache:
-   image: php:7.4-apache
+   image: php:8.3-apache
    container_name: distance_cep_apache
    restart: always
    ports:
       - "8000:80"
    volumes:
-      - ../src:/app/www/
-      - ../src:/usr/local/apache2/htdocs
+      - ./src:/usr/local/apache2/htdocs
       - ./apache:/conf/httpd.conf /usr/local/apache2/conf/httpd.conf
    environment:
       - APACHE_RUN_DIR=/var/run/apache2
