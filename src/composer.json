@@ -13,6 +13,7 @@
         }
     ],
     "require": {
-        "robmorgan/phinx": "^0.16.1"
+        "robmorgan/phinx": "^0.16.1",
+        "php-amqplib/php-amqplib": "^3.6"
     }
 }
