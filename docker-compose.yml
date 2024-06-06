@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.8'
 
 services:
   distance_cep:
@@ -20,6 +20,8 @@ services:
           memory: 2G
     networks:
       - mynetwork
+    env_file:
+      - .env
 
   db:
     image: mysql
