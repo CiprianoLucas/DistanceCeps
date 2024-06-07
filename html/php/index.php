@@ -19,21 +19,54 @@ class DistanciaCeps
      */
     public static function salvarDistancia($cep1, $cep2, $distancia)
     {
+        // Dados para conexão com o banco de dados
+        $servername = "";
+        $username = "";
+        $password = "";
+        $dbname = "";
+
+        // Cria a conexão
+        $conn = new mysqli($servername, $username, $password, $dbname);
+
+        // Verifica a conexão
+        if ($conn->connect_error) {
+            die("Conexão falhou: " . $conn->connect_error);
+        }
+
+        // Dados a serem inseridos
+        $cep_inicio = '01000-000';
+        $cep_fim = '02000-000';
+        $distancia = 5.5;
+
+        // Prepara e vincula
+        $stmt = $conn->prepare("INSERT INTO cep_distances (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?)");
+        $stmt->bind_param("ssd", $cep_inicio, $cep_fim, $distancia);
+
+        // Executa a inserção
+        if ($stmt->execute()) {
+            echo "Novo registro criado com sucesso";
+        } else {
+            echo "Erro: " . $stmt->error;
+        }
+
+        // Fecha a declaração e a conexão
+        $stmt->close();
+        $conn->close();
+
         return false;
     }
 
     /**
      * Coleta as coodenadas de um CEP na API CEP Aberto.
      *
-     * @param integer $cep1 - CEP a ser coletado
+     * @param string $cep - CEP a ser coletado
      * @return array latitude e longitude
      *
      */
-    public static function coletarCoordenadas($cep1)
+    public static function coletarCoordenadas($cep)
     {
         $cepAbertoToken = getenv('CEP_ABERTO_TOKEN');
-        $url = self::$CEP_ABERTO_URL . $cep1;
-
+        $url = self::$CEP_ABERTO_URL . $cep;
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_HTTPHEADER, array("Authorization: Token token=$cepAbertoToken"));
@@ -43,6 +76,10 @@ class DistanciaCeps
 
         $lat = $data['latitude'];
         $lon = $data['longitude'];
+
+        print_r($lat);
+        sleep(1);
+
         return array($lat, $lon);
     }
 
@@ -74,17 +111,11 @@ class DistanciaCeps
     }
 }
 
-$envFile = __DIR__ . '/.env';
-$lat1 = -22.9068;
-$lon1 = -43.1729;
-$lat2 = 37.7749;
-$lon2 = -122.4194;
-$coordenadas1 = array($lat1, $lon1);
-$coordenadas2 = array($lat2, $lon2);
 $cep1 = "01001000";
 $cep2 = "89053195";
-// $distance = DistanciaCeps::distanciaCoordenadas($coordenadas1, $coordenadas2);
-$coordenadas = DistanciaCeps::coletarCoordenadas($cep1);
-print_r($coordenadas);;
+$coordenadas1 = DistanciaCeps::coletarCoordenadas($cep1);
+$coordenadas2 = DistanciaCeps::coletarCoordenadas($cep2);
+$distance = DistanciaCeps::distanciaCoordenadas($coordenadas1, $coordenadas2);
+print_r($distance);
 
-// echo "A distância entre os pontos é de " . $distance . " km"
+echo "A distância entre os pontos é de " . $distance . " km";

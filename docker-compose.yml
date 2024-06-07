@@ -62,6 +62,8 @@ services:
       - APACHE_RUN_GROUP=www-data
    command: >
       bash -c "chmod -R 755 /usr/local/apache2/htdocs && chown -R www-data:www-data /usr/local/apache2/htdocs && apache2 -D FOREGROUND"
+   env_file:
+      - .env
 
   rabbitmq:
     image: rabbitmq:3-management

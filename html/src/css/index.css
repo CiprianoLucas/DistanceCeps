@@ -22,12 +22,17 @@ main {
     max-height: calc(100vh - 120px);
 }
 
-nav a:hover {
+nav a:hover, nav button:hover, nav label:hover {
     text-decoration: none;
     background: #cfcfcf;
+    cursor: pointer;
 }
 
 footer {
+    font-size: 0.8rem;
+}
+
+.table {
     font-size: 0.8rem;
 }
 
