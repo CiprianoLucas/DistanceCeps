@@ -20,5 +20,5 @@ Execute os comandos:
 ```cmd
 docker compose up -d --build
 docker compose run --rm distance_cep composer install
-docker compose run --rm distance_cep ./src/vendor/bin/phinx migrate -e test
+docker compose run --rm distance_cep vendor/bin/phinx migrate -e test
 ```

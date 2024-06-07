@@ -3,21 +3,12 @@ FROM php:8.3-apache
 COPY src/ /var/www/src
 COPY html/ /var/www/html
 
-RUN apt-get update
-RUN apt-get install -y git curl zip unzip
+RUN apt-get update &&  apt-get install -y git curl zip unzip
 
-RUN docker-php-ext-install pdo_mysql
-RUN docker-php-ext-install sockets
+RUN docker-php-ext-install pdo_mysql pdo sockets mysqli
+
 COPY --from=composer /usr/bin/composer /usr/bin/composer
-COPY ./apache/conf/ /usr/local/apache2/conf/
-COPY .env /var/www/src/.env
-
-ENV CEP_ABERTO_TOKEN=${CEP_ABERTO_TOKEN}
-
-RUN a2enmod rewrite
-RUN service apache2 restart
 
 EXPOSE 80
-EXPOSE 3306
 
 CMD ["apache2-foreground"]

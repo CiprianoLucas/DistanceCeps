@@ -10,48 +10,60 @@ class DistanciaCeps
     static $R = 6371;
 
     /**
+     * Faz alguns tratamentos no CEP para retornar um CEP válido.
+     *
+     * @param string $cep - CEP em seu formato de entrada
+     * @return string - CEP só com números ou false se não for válido
+     */
+    public static function tratarCep($cep)
+    {
+
+        $cep = preg_replace('/\D/', '', $cep);
+
+        if (strlen($cep) == 7 || strlen($cep) == 8) {
+
+            $cepInt = intval($cep);
+
+            // Verifica se o CEP está no range permitido
+            if ($cepInt >= 1001000 && $cepInt <= 99999999) {
+                // Completa com zeros à esquerda se necessário
+                return str_pad($cep, 8, '0', STR_PAD_LEFT);
+            }
+        }
+
+        return false;
+
+    }
+
+    /**
      * Salva no banco de dados a distância entre dois CEPs. Salvará duas vezes, invertendo o lado
      *
-     * @param integer $cep1 - CEP 1
-     * @param integer $cep2 - CEP 2
+     * @param string $cep1 - CEP 1
+     * @param string $cep2 - CEP 2
      * @param float $distancia - Distância entre os dois CEPs
      * @return boolean - true se salvou com sucesso
      */
     public static function salvarDistancia($cep1, $cep2, $distancia)
     {
-        // Dados para conexão com o banco de dados
-        $servername = "";
-        $username = "";
-        $password = "";
-        $dbname = "";
 
-        // Cria a conexão
+        $servername = getenv('DB_SERVERNAME');
+        $username = getenv('DB_USERNAME');
+        $password = getenv('DB_PASSWORD');
+        $dbname = getenv('DB_NAME');
+
+        $cep1 = intval($cep1);
+        $cep2 = intval($cep2);
+
         $conn = new mysqli($servername, $username, $password, $dbname);
 
-        // Verifica a conexão
         if ($conn->connect_error) {
-            die("Conexão falhou: " . $conn->connect_error);
+            die("Falha na conexão: " . $conn->connect_error);
         }
 
-        // Dados a serem inseridos
-        $cep_inicio = '01000-000';
-        $cep_fim = '02000-000';
-        $distancia = 5.5;
+        $stmt = $conn->prepare("INSERT INTO distancias (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?)");
+        $stmt->bind_param("iid", $cep1, $cep2, $distancia);
 
-        // Prepara e vincula
-        $stmt = $conn->prepare("INSERT INTO cep_distances (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?)");
-        $stmt->bind_param("ssd", $cep_inicio, $cep_fim, $distancia);
-
-        // Executa a inserção
-        if ($stmt->execute()) {
-            echo "Novo registro criado com sucesso";
-        } else {
-            echo "Erro: " . $stmt->error;
-        }
-
-        // Fecha a declaração e a conexão
-        $stmt->close();
-        $conn->close();
+        $stmt->execute();
 
         return false;
     }
@@ -105,17 +117,19 @@ class DistanciaCeps
         $a = sin($dlat / 2) * sin($dlat / 2) + cos($lat1) * cos($lat2) * sin($dlon / 2) * sin($dlon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
-        $distance = (float)number_format(self::$R * $c, 2);
+        $distance = (float) number_format(self::$R * $c, 2);
 
         return $distance;
     }
 }
 
-$cep1 = "01001000";
-$cep2 = "89053195";
+$cep1 = "01001-000";
+$cep2 = "89053-195";
+$cep1 = DistanciaCeps::tratarCep($cep1);
+$cep2 = DistanciaCeps::tratarCep($cep2);
 $coordenadas1 = DistanciaCeps::coletarCoordenadas($cep1);
 $coordenadas2 = DistanciaCeps::coletarCoordenadas($cep2);
-$distance = DistanciaCeps::distanciaCoordenadas($coordenadas1, $coordenadas2);
-print_r($distance);
+$distancia = DistanciaCeps::distanciaCoordenadas($coordenadas1, $coordenadas2);
+$deuBoa = DistanciaCeps::salvarDistancia($cep1, $cep2, $distancia);
 
-echo "A distância entre os pontos é de " . $distance . " km";
+echo $deuBoa;

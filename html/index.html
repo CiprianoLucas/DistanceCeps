@@ -27,7 +27,7 @@
                 </div>
             </button>
         </header>
-        <a href="./php/index.php">teste</a>
+        <!-- <a href="./php/index.php">teste</a> -->
         <nav class="navbar navbar-expand-md navbar-light bg-light my-0 rounded-bottom">
 
             <div class="collapse navbar-collapse m-0 p-0" id="navbarNav">
@@ -61,10 +61,10 @@
             <div class="table">
                 <form action="post">
                     <div class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="CEP 1" aria-label="CEP 1"
-                            aria-describedby="button-addon">
-                        <input type="text" class="form-control" placeholder="CEP 2" aria-label="CEP 2"
-                            aria-describedby="button-addon">
+                        <input type="text" class="form-control cep-input" placeholder="CEP 1" aria-label="CEP 1"
+                            aria-describedby="button-addon" data-mask="00000-000">
+                        <input type="text" class="form-control cep-input" placeholder="CEP 2" aria-label="CEP 2"
+                            aria-describedby="button-addon" data-mask="00000-000">
                         <div class="input-group-append">
                             <button class="btn btn-outline-secondary" type="button" id="button-addon"><i
                                     class="bi bi-search"></i></button>
@@ -113,11 +113,11 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label for="cep-1" class="col-form-label">CEP 1:</label>
-                            <input type="text" class="form-control" id="cep-1">
+                            <input type="text" class="form-control cep-input" id="cep-1" data-mask="00000-000">
                         </div>
                         <div class="form-group">
-                            <label for="cep-1" class="col-form-label">CEP 2:</label>
-                            <input type="text" class="form-control" id="cep-1">
+                            <label for="cep-2" class="col-form-label">CEP 2:</label>
+                            <input type="text" class="form-control cep-input" id="cep-2" data-mask="00000-000">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -178,6 +178,7 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="./src/js/mask.js"></script>
     <script type="module" src="./src/js/app.js"></script>
 </body>
 
