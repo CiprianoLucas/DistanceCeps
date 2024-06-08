@@ -64,6 +64,8 @@ services:
       bash -c "chmod -R 755 /usr/local/apache2/htdocs && chown -R www-data:www-data /usr/local/apache2/htdocs && apache2 -D FOREGROUND"
    env_file:
       - .env
+   depends_on:
+      - db
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -72,6 +74,7 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    
 
 volumes:
   rabbitmq_data:

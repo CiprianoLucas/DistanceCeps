@@ -60,7 +60,8 @@ class DistanciaCeps
             die("Falha na conexão: " . $conn->connect_error);
         }
 
-        $stmt = $conn->prepare("INSERT INTO distancias (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO distancias (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE distancia = VALUES(distancia)");
+
         $stmt->bind_param("iid", $cep1, $cep2, $distancia);
 
         $stmt->execute();
