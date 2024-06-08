@@ -10,6 +10,43 @@ class DistanciaCeps
     static $R = 6371;
 
     /**
+     * Busca as consultas de um cep ou todos.
+     *
+     * @param string $cep1 - CEP primario de consulta
+     * @param string $cep2 - CEP secundário de consulta
+     * @return string - resultado da consulta em json
+     */
+    public static function buscarDistanciasMySQL($cep1 = '', $cep2 = '')
+    {
+        $conn = self::connectMySQL();
+
+        if ($cep1 == null && $cep2 == null) {
+            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias";
+        } else if ($cep2 == null) {
+            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_inicio = '$cep1'";
+        } else if ($cep1 == null) {
+            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_fim = '$cep2'";
+        } else {
+            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_inicio = '$cep1' AND cep_fim = '$cep2'";
+        }
+
+        $result = $conn->query($sql);
+
+        $distancias = array();
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $distancias[] = $row;
+            }
+        }
+
+        $conn->close();
+
+        $distanciaJson = json_encode($distancias);
+
+        return $distanciaJson;
+    }
+
+    /**
      * Faz alguns tratamentos no CEP para retornar um CEP válido.
      *
      * @param string $cep - CEP em seu formato de entrada
@@ -32,7 +69,24 @@ class DistanciaCeps
         }
 
         return false;
+    }
+    /**
+     * Faz uma conexão com o banco de dados.
+     *
+     * @return mysqli - conexão com o banco de dados
+     */
+    protected static function connectMySQL()
+    {
+        $servername = getenv('DB_SERVERNAME');
+        $username = getenv('DB_USERNAME');
+        $password = getenv('DB_PASSWORD');
+        $dbname = getenv('DB_NAME');
 
+        $conn = new mysqli($servername, $username, $password, $dbname);
+        $sql = "SET time_zone = 'America/Sao_Paulo'";
+        $conn->query($sql);
+
+        return $conn;
     }
 
     /**
@@ -46,25 +100,22 @@ class DistanciaCeps
     public static function salvarDistancia($cep1, $cep2, $distancia)
     {
 
-        $servername = getenv('DB_SERVERNAME');
-        $username = getenv('DB_USERNAME');
-        $password = getenv('DB_PASSWORD');
-        $dbname = getenv('DB_NAME');
-
         $cep1 = intval($cep1);
         $cep2 = intval($cep2);
 
-        $conn = new mysqli($servername, $username, $password, $dbname);
+        $conn = self::connectMySQL();
 
         if ($conn->connect_error) {
             die("Falha na conexão: " . $conn->connect_error);
         }
 
         $stmt = $conn->prepare("INSERT INTO distancias (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE distancia = VALUES(distancia)");
-
         $stmt->bind_param("iid", $cep1, $cep2, $distancia);
-
         $stmt->execute();
+        $stmt->bind_param("iid", $cep2, $cep1, $distancia);
+        $stmt->execute();
+
+
 
         return false;
     }
@@ -90,7 +141,6 @@ class DistanciaCeps
         $lat = $data['latitude'];
         $lon = $data['longitude'];
 
-        print_r($lat);
         sleep(1);
 
         return array($lat, $lon);
@@ -122,15 +172,79 @@ class DistanciaCeps
 
         return $distance;
     }
+
+    /**
+     * Faz alguns tratamentos no CEP para retornar um CEP válido.
+     *
+     * @param string $nivel - número do nível (0: TRACE, 1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR)
+     * @param string $mensagem - CEP em seu formato de entrada
+     * @param array $contexto - CEP em seu formato de entrada
+     */
+    public static function salvarLog($nivel, $mensagem, $contexto)
+    {
+        switch ($nivel) {
+            case 0:
+                $nivel_str = "TRACE";
+                break;
+            case 1:
+                $nivel_str = "DEBUG";
+                break;
+            case 2:
+                $nivel_str = "INFO";
+                break;
+            case 3:
+                $nivel_str = "WARNING";
+                break;
+            case 4:
+                $nivel_str = "ERROR";
+                break;
+            default:
+                $nivel_str = "UNKNOWN";
+                break;
+        };
+
+        $contexto_json = json_encode($contexto);
+
+        $conn = self::connectMySQL();
+
+        $stmt = $conn->prepare("INSERT INTO logs (level, message, context) VALUES (?, ?, ?)");
+
+        $stmt->bind_param("sss", $nivel_str, $mensagem, $contexto_json);
+
+        $stmt->execute();
+
+        $stmt->close();
+        $conn->close();
+    }
+
+    public static function buscarLogsMySQL()
+    {
+        $conn = self::connectMySQL();
+        $sql = "SELECT * FROM logs ORDER BY id DESC LIMIT 50";
+        $result = $conn->query($sql);
+        $logs = array();
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $logs[] = $row;
+            }
+        }
+        $conn->close();
+        $logsJson = json_encode($logs);
+        return $logsJson;
+    }
 }
 
-$cep1 = "01001-000";
+$cep1 = "01002-000";
 $cep2 = "89053-195";
 $cep1 = DistanciaCeps::tratarCep($cep1);
 $cep2 = DistanciaCeps::tratarCep($cep2);
 $coordenadas1 = DistanciaCeps::coletarCoordenadas($cep1);
 $coordenadas2 = DistanciaCeps::coletarCoordenadas($cep2);
 $distancia = DistanciaCeps::distanciaCoordenadas($coordenadas1, $coordenadas2);
-$deuBoa = DistanciaCeps::salvarDistancia($cep1, $cep2, $distancia);
 
-echo $deuBoa;
+DistanciaCeps::salvarDistancia($cep1, $cep2, $distancia);
+DistanciaCeps::salvarLog(2, "Distância entre os CEPs salva com sucesso", array("cep1" => $cep1, "cep2" => $cep2, "distancia" => $distancia));
+
+header('Content-Type: application/json');
+
+echo json_encode(DistanciaCeps::buscarDistanciasMySQL());
