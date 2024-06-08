@@ -52,7 +52,6 @@ services:
       - ./html:/var/www/html
       - ./src:/usr/local/apache2/htdocs/src
       - ./src:/usr/local/apache2/htdocs/html
-      - ./apache/conf:/usr/local/apache2/conf
    environment:
       - APACHE_RUN_DIR=/var/run/apache2
       - APACHE_PID_FILE=/var/run/apache2/apache2.pid
