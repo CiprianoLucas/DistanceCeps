@@ -37,7 +37,7 @@ Não é obrigatório, mas seria muito legal se você utilizasse:
 <br>
 
 ## Instalação
-Necessário ter o docker e php instalado!
+Necessário ter o docker instalado!
 
 Clone o repositório. crie um arquivo .env na pasta raiz do projeto, como o banco de dados é local no Docker, pode manter as informações do Banco de dados. Sendo necessário alterar apenas o token do Cep Aberto API
 ```.env
