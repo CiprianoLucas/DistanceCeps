@@ -94,6 +94,8 @@ class DistanciaCeps
         }
 
         self::gerarErro("CEP $cep formato inválido");
+        
+        return 0;
     }
     /**
      * Faz uma conexão com o banco de dados.
