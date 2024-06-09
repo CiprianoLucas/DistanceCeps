@@ -392,8 +392,20 @@ class DistanciaCeps
 
 error_reporting(0);
 
+// Configurações
+header("Access-Control-Allow-Origin: *");
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    // Adiciona os cabeçalhos necessários para o CORS
+    header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type");
+    header("Access-Control-Max-Age: 86400"); // Cache por 1 dia
+    exit(0); // Encerra a execução sem retornar conteúdo
+}
+
+
 $str_required = file_get_contents('php://input');
 
+//Verifica se é uma impostação de CEPS
 if (strpos($str_required, 'importarCeps') !== false) {
 
     $partes = explode("\r\n", $str_required);
@@ -413,9 +425,6 @@ if (strpos($str_required, 'importarCeps') !== false) {
         if ($parte === '') {
             break;
         }
-
-
-
 
         $linha = explode(";", $parte);
         $data = [
@@ -444,6 +453,8 @@ if (strpos($str_required, 'importarCeps') !== false) {
     } else {
         echo json_encode(['success' => 'Todos os CEPs fora cadastrados com sucesso!'], true);
     }
+
+//Valida se é outra função
 } else {
 
     $data = json_decode($str_required, true);
