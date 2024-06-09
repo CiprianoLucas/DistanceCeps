@@ -12,12 +12,26 @@ new Vue({
         showPopup: false,
         cadastrando: false,
         popupMessage: '',
+        typePopup: 'bg-success',
         msImportando: 'importar',
         msCadastrando: 'Calcular e cadastrar'
     },
     mounted() {
-        this.fetchRegistros()
-        this.fetchLogs()
+        const cacheRegistros = localStorage.getItem('registros');
+        if (cacheRegistros) {
+            this.registros = JSON.parse(cacheRegistros);
+            this.carregando = false;
+        } else {
+            this.fetchRegistros()
+        }
+
+        const cacheLogs = localStorage.getItem('logs');
+        if (cacheLogs) {
+            this.logs = JSON.parse(cacheLogs);
+        } else {
+            this.fetchLogs()
+        }
+
     },
     methods: {
         fetchRegistros() {
@@ -40,11 +54,13 @@ new Vue({
                     return response.json();
                 })
                 .then(data => {
+                    localStorage.setItem('registros', JSON.stringify(data))
                     this.registros = data;
                     this.carregando = false;
                 })
                 .catch(error => {
                     this.carregando = false;
+                    this.errorPopUp("Erro ao buscar registros");
 
                 });
         },
@@ -66,19 +82,36 @@ new Vue({
                     return response.json();
                 })
                 .then(data => {
+                    localStorage.setItem('logs', JSON.stringify(data))
                     this.logs = data;
-                    console.log(this.logs);
+                    this.successPopup("Sucesso ao buscar logs");
 
                 })
                 .catch(error => {
-                    console.log("deu ruim")
+                    this.errorPopUp("Erro ao buscar logs");
                 });
         },
 
         includeRegistro() {
 
-            this.msCadastrando = 'Calcular e cadastrar'
+
+            this.msCadastrando = 'Cadastrando...'
             this.cadastrando = true
+
+            let cacheCadastro = localStorage.getItem('cadastro') ? JSON.parse(localStorage.getItem('cadastro')) : [];
+
+            console.log(cacheCadastro)
+
+            const jaExiste = cacheCadastro.some(
+                registro => registro.cepModal1 === this.cepModal1 && registro.cepModal2 === this.cepModal2
+            );
+
+            if (jaExiste) {
+                this.errorPopUp('Cadastro já efetuado anteriormente')
+                this.cadastrando = false
+                this.msCadastrando = 'Calcular e cadastrar'
+                return
+            }
 
             fetch('http://127.0.0.1:8000/php/index.php', {
                 method: 'POST',
@@ -96,8 +129,16 @@ new Vue({
                     if (data.error) {
                         this.errorPopUp(data.error)
                     }
+                    else {
+                        this.successPopup(data.success)
+                        cacheCadastro.push({ cepModal1: this.cepModal1, cepModal2: this.cepModal2 })
+                        localStorage.setItem('cadastro', JSON.stringify(cacheCadastro));
+                    }
                     this.cadastrando = false
                     this.msCadastrando = 'Calcular e cadastrar'
+                    this.cepTable1 = ''
+                    this.cepTable2 = ''
+                    this.fetchRegistros()
                 })
                 .catch(error => {
 
@@ -127,7 +168,10 @@ new Vue({
                 .then(data => {
                     if (data.error) {
                         this.errorPopUp(data.error)
+                    } else {
+                        this.successPopup(data.success)
                     }
+                    this.fetchRegistros()
                     this.importando = false
                     this.msImportando = "importar"
                 })
@@ -136,15 +180,25 @@ new Vue({
                     this.importando = false
                     this.msImportando = "importar"
                 });
-                
+
         },
 
         errorPopUp(message) {
             this.popupMessage = message;
+            this.typePopup = 'bg-danger';
             this.showPopup = true;
             setTimeout(() => {
                 this.showPopup = false;
-            }, 3000);
+            }, 10000);
+        },
+
+        successPopup(message) {
+            this.popupMessage = message;
+            this.typePopup = 'bg-success';
+            this.showPopup = true;
+            setTimeout(() => {
+                this.showPopup = false;
+            }, 10000);
         }
     }
 });

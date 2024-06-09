@@ -40,7 +40,7 @@
                             <span class="ml-2">Cadastrar</span>
                         </div>
                     </button>
-                    <input type="file" class="custom-file-input d-none" id="inputGroupFile04"
+                    <input type="file" class="custom-file-input d-none" id="inputGroupFile04" accept=".csv, text/csv"
                         aria-describedby="inputGroupFileAddon04" @change="importarCeps" :disabled="importando">
                     <label class="col text-dark d-flex justify-content-center border m-0" :class="{ 'loading-button': importando }" for="inputGroupFile04" >
                         <div class="p-2">
@@ -130,7 +130,7 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="submit" class="btn btn-secondary" :class="{ 'loading-button': cadastrando }" :class :disabled="cadastrando">{{msCadastrando}}</button>
+                            <button type="submit" class="btn btn-secondary" :class="{ 'loading-button': cadastrando }" :disabled="cadastrando">{{msCadastrando}}</button>
                         </div>
                     </form>
                 </div>
@@ -176,7 +176,7 @@
             </div>
         </div>
         <transition name="fade">
-            <div v-if="showPopup" class="popup">
+            <div v-if="showPopup" class="popup" :class="typePopup">
                 {{popupMessage}}
             </div>
         </transition>

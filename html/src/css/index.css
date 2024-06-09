@@ -56,11 +56,10 @@ footer {
 
 .popup {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: #9e0000;
+    bottom: 40px;
+    right: 40px;
     color: #fff;
-    padding: 10px 20px;
+    padding: 20px 30px;
     border-radius: 5px;
     z-index: 9999;
     /* display: none; */

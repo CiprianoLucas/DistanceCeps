@@ -9,7 +9,7 @@ class DistanciaCeps
     static $CEP_ABERTO_URL = "https://www.cepaberto.com/api/v3/cep?cep=";
     static $R = 6371;
     public $importacao = false;
-    protected $erro = false;
+    public $erro = false;
     public $data;
 
     public function __construct($data)
@@ -138,11 +138,27 @@ class DistanciaCeps
 
             $conn = self::connectMySQL();
 
+            $result = $conn->query("SELECT * FROM distancias WHERE cep_inicio = $cep1 AND cep_fim = $cep2");
+
+            if ($result->num_rows > 0) {
+                $update = true;
+            } else {
+                $update = false;
+            }
+
             $stmt = $conn->prepare("INSERT INTO distancias (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE distancia = VALUES(distancia)");
-            $stmt->bind_param("iid", $cep1, $cep2, $distancia);
-            $stmt->execute();
             $stmt->bind_param("iid", $cep2, $cep1, $distancia);
             $stmt->execute();
+            $stmt->bind_param("iid", $cep1, $cep2, $distancia);
+            $stmt->execute();
+
+            if ($update) {
+                self::salvarLog(2, "Atualizado: Distância entre $cep1 e $cep2: $distancia Km");
+            } else {
+                self::salvarLog(2, "Cadastrado: Distância entre $cep1 e $cep2: $distancia Km");
+            }
+
+            return $update;
         }
 
 
@@ -167,11 +183,17 @@ class DistanciaCeps
 
         $distancia = self::distanciaCoordenadas($coordCep1, $coordCep2);
 
-        self::salvarDistancia($cep1, $cep2, $distancia);
+        $update = self::salvarDistancia($cep1, $cep2, $distancia);
 
-        $response = [
-            'success' => true,
-        ];
+        if ($update) {
+            $response = [
+                'success' => "Atualizado: Distância entre $cep1 e $cep2: $distancia Km",
+            ];
+        } else {
+            $response = [
+                'success' => "Cadastrado: Distância entre $cep1 e $cep2: $distancia Km",
+            ];
+        }
 
         return json_encode($response);
     }
@@ -260,7 +282,7 @@ class DistanciaCeps
         $a = sin($dlat / 2) * sin($dlat / 2) + cos($lat1) * cos($lat2) * sin($dlon / 2) * sin($dlon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
-        $distancia = (float) number_format(self::$R * $c, 2);
+        $distancia = round(self::$R * $c, 2);
 
         return $distancia;
     }
@@ -319,7 +341,9 @@ class DistanciaCeps
     public function gerarErro($mensagem)
     {
         http_response_code(400);
-        echo json_encode(['error' => "$mensagem"]);
+        if (!$this->importacao) {
+            echo json_encode(['error' => "$mensagem"]);
+        }
         self::salvarLog(4, $mensagem);
         self::toExit();
     }
@@ -372,35 +396,52 @@ if (strpos($str_required, 'importarCeps') !== false) {
 
     $partes = explode("\r\n", $str_required);
     $comecar = false;
+    $error = false;
     foreach ($partes as $parte) {
 
-        if (!(strpos($parte, 'cep1;cep2') !== false || $comecar)) {
+        if (strpos($parte, 'cep1;cep2') !== false) {
+            $comecar = true;
             continue;
         }
+
+        if (!$comecar) {
+            continue;
+        }
+
         if ($parte === '') {
             break;
         }
-        $comecar = true;
+
+
+
+
         $linha = explode(";", $parte);
         $data = [
             "funcao" => "importarCeps",
-            "cep1"=> $linha[0],
-            "cep2"=> $linha[1]
+            "cep1" => $linha[0],
+            "cep2" => $linha[1]
         ];
 
         try {
             $request = new DistanciaCeps($data);
             $request->importacao = true;
             $request->distanciaCeps($linha[0], $linha[1]);
+
+            if ($request->erro) {
+                $error = true;
+            }
+
         } catch (Exception) {
 
-            $erros[] = 'Erro ao processar ceps: ' . $linha[0] . ',' . $linha[1];
+            $error = true;
             continue;
         }
     }
-
-    echo json_encode(['erros' => $erros], true);
-    
+    if ($error) {
+        echo json_encode(['error' => 'Alguns ceps não foram importados, verifique o arquivo e os logs e tente novamente'], true);
+    } else {
+        echo json_encode(['success' => 'Todos os CEPs fora cadastrados com sucesso!'], true);
+    }
 } else {
 
     $data = json_decode($str_required, true);
