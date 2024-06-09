@@ -7,7 +7,13 @@ new Vue({
         cepTable2: '',
         registros: [],
         logs: [],
-        carregando: true
+        carregando: true,
+        importando: false,
+        showPopup: false,
+        cadastrando: false,
+        popupMessage: '',
+        msImportando: 'importar',
+        msCadastrando: 'Calcular e cadastrar'
     },
     mounted() {
         this.fetchRegistros()
@@ -22,59 +28,130 @@ new Vue({
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    funcao: 'buscarDistancias',
                     cep1: this.cepTable1,
                     cep2: this.cepTable2
                 })
             })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    registros = JSON.parse(data);
-                    this.registros = registros;
+                    this.registros = data;
                     this.carregando = false;
                 })
                 .catch(error => {
-                    console.error('Erro ao buscar registros:', error);
                     this.carregando = false;
+
                 });
         },
 
         fetchLogs() {
-            fetch('http://127.0.0.1:8000/php/index.php')
-                .then(response => response.json())
-                .then(data => {
-                    logs = JSON.parse(data);
-                    this.logs = logs;
-
-                })
-                .catch(error => {
-                    console.error('Erro ao buscar registros:', error);
-
-                });
-        },
-
-        includeRegistro() {
             fetch('http://127.0.0.1:8000/php/index.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    funcao: 'logs',
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    this.logs = data;
+                    console.log(this.logs);
+
+                })
+                .catch(error => {
+                    console.log("deu ruim")
+                });
+        },
+
+        includeRegistro() {
+
+            this.msCadastrando = 'Calcular e cadastrar'
+            this.cadastrando = true
+
+            fetch('http://127.0.0.1:8000/php/index.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    funcao: 'salvarDistancia',
                     cep1: this.cepModal1,
                     cep2: this.cepModal2
                 })
             })
                 .then(response => response.json())
                 .then(data => {
+                    if (data.error) {
+                        this.errorPopUp(data.error)
+                    }
+                    this.cadastrando = false
+                    this.msCadastrando = 'Calcular e cadastrar'
                 })
                 .catch(error => {
+
+                    this.errorPopUp(error)
+                    this.cadastrando = false
+                    this.msCadastrando = 'Calcular e cadastrar'
                 });
+        },
+
+        importarCeps(evento) {
+
+            const arquivo = evento.target.files[0];
+            const formData = new FormData();
+            formData.append('arquivo', arquivo);
+            formData.append('funcao', 'importarCeps');
+            this.importando = true
+            this.msImportando = "importando..."
+
+            fetch('http://127.0.0.1:8000/php/index.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        this.errorPopUp(data.error)
+                    }
+                    this.importando = false
+                    this.msImportando = "importar"
+                })
+                .catch(error => {
+                    this.errorPopUp(error)
+                    this.importando = false
+                    this.msImportando = "importar"
+                });
+                
+        },
+
+        errorPopUp(message) {
+            this.popupMessage = message;
+            this.showPopup = true;
+            setTimeout(() => {
+                this.showPopup = false;
+            }, 3000);
         }
     }
 });
 
 Vue.component('cep-input', {
     template: `
-        <input type="text" class="form-control" :class="{'border-danger': erro}" v-model="cep" @input="formatarCep" @blur="validarCep" placeholder="00000-000" aria-label="CEP">
+        <input type="text" class="form-control" :class="{'border-danger': erro}" v-model="cep" @input="onInput" @blur="validarCep" placeholder="00000-000" aria-label="CEP">
     `,
     props: ['value'],
     data() {
@@ -99,6 +176,10 @@ Vue.component('cep-input', {
             } else {
                 this.erro = true;
             }
+        },
+        onInput(event) {
+            this.formatarCep();
+            this.$emit('input', this.cep);
         }
     },
     watch: {

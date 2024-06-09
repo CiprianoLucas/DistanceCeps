@@ -53,3 +53,43 @@ footer {
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+.popup {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #9e0000;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    z-index: 9999;
+    /* display: none; */
+    animation: fadeOut 3s forwards;
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; display: none; }
+}
+
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.5s;
+}
+.fade-enter, .fade-leave-to {
+    opacity: 0;
+}
+
+.loading-button {
+    animation: animacao 1s infinite alternate;
+    cursor: grab;
+}
+
+@keyframes animacao {
+    from {
+        transform: translateY(-5);
+    }
+    to {
+        transform: translateY(-5px);
+    }
+}

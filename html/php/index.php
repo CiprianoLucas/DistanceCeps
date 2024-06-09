@@ -8,6 +8,14 @@ class DistanciaCeps
 
     static $CEP_ABERTO_URL = "https://www.cepaberto.com/api/v3/cep?cep=";
     static $R = 6371;
+    public $importacao = false;
+    protected $erro = false;
+    public $data;
+
+    public function __construct($data)
+    {
+        $this->data = $data;
+    }
 
     /**
      * Busca as consultas de um cep ou todos.
@@ -16,18 +24,22 @@ class DistanciaCeps
      * @param string $cep2 - CEP secundário de consulta
      * @return string - resultado da consulta em json
      */
-    public static function buscarDistanciasMySQL($cep1 = '', $cep2 = '')
+    public function buscarDistanciasMySQL($cep1 = '', $cep2 = '')
     {
         $conn = self::connectMySQL();
 
         if ($cep1 == null && $cep2 == null) {
-            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias";
+            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias ORDER BY id DESC LIMIT 200";
         } else if ($cep2 == null) {
-            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_inicio = '$cep1'";
+            $cep1 = self::tratarCep($cep1);
+            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_inicio = '$cep1' ORDER BY id DESC LIMIT 200";
         } else if ($cep1 == null) {
-            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_fim = '$cep2'";
+            $cep2 = self::tratarCep($cep2);
+            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_fim = '$cep2' ORDER BY id DESC LIMIT 200";
         } else {
-            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_inicio = '$cep1' AND cep_fim = '$cep2'";
+            $cep1 = self::tratarCep($cep1);
+            $cep2 = self::tratarCep($cep2);
+            $sql = "SELECT cep_inicio, cep_fim, distancia FROM distancias WHERE cep_inicio = '$cep1' AND cep_fim = '$cep2' ORDER BY id DESC LIMIT 200";
         }
 
         $result = $conn->query($sql);
@@ -35,7 +47,20 @@ class DistanciaCeps
         $distancias = array();
         if ($result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
-                $distancias[] = $row;
+                $cepInicio = $row['cep_inicio'];
+                $cepFim = $row['cep_fim'];
+
+                $cepInicio = str_pad(strval($cepInicio), 8, '0', STR_PAD_LEFT);
+                $cepFim = str_pad(strval($cepFim), 8, '0', STR_PAD_LEFT);
+
+                $cepInicioFormatado = substr($cepInicio, 0, 5) . '-' . substr($cepInicio, 5, 3);
+                $cepFimFormatado = substr($cepFim, 0, 5) . '-' . substr($cepFim, 5, 3);
+
+                $distancias[] = array(
+                    'cep_inicio' => $cepInicioFormatado,
+                    'cep_fim' => $cepFimFormatado,
+                    'distancia' => $row['distancia']
+                );
             }
         }
 
@@ -52,7 +77,7 @@ class DistanciaCeps
      * @param string $cep - CEP em seu formato de entrada
      * @return string - CEP só com números ou false se não for válido
      */
-    public static function tratarCep($cep)
+    public function tratarCep($cep)
     {
 
         $cep = preg_replace('/\D/', '', $cep);
@@ -61,14 +86,14 @@ class DistanciaCeps
 
             $cepInt = intval($cep);
 
-            // Verifica se o CEP está no range permitido
+
             if ($cepInt >= 1001000 && $cepInt <= 99999999) {
-                // Completa com zeros à esquerda se necessário
+
                 return str_pad($cep, 8, '0', STR_PAD_LEFT);
             }
         }
 
-        return false;
+        self::gerarErro("CEP $cep formato inválido");
     }
     /**
      * Faz uma conexão com o banco de dados.
@@ -83,6 +108,14 @@ class DistanciaCeps
         $dbname = getenv('DB_NAME');
 
         $conn = new mysqli($servername, $username, $password, $dbname);
+
+        if ($conn->connect_error) {
+            http_response_code(500);
+            echo json_encode(['error' => "Falha ao conectar com o banco de dados"]);
+            exit;
+        }
+
+
         $sql = "SET time_zone = 'America/Sao_Paulo'";
         $conn->query($sql);
 
@@ -97,27 +130,77 @@ class DistanciaCeps
      * @param float $distancia - Distância entre os dois CEPs
      * @return boolean - true se salvou com sucesso
      */
-    public static function salvarDistancia($cep1, $cep2, $distancia)
+    public function salvarDistancia($cep1, $cep2, $distancia)
     {
+        if (!$this->erro) {
+            $cep1 = intval($cep1);
+            $cep2 = intval($cep2);
 
-        $cep1 = intval($cep1);
-        $cep2 = intval($cep2);
+            $conn = self::connectMySQL();
 
-        $conn = self::connectMySQL();
-
-        if ($conn->connect_error) {
-            die("Falha na conexão: " . $conn->connect_error);
+            $stmt = $conn->prepare("INSERT INTO distancias (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE distancia = VALUES(distancia)");
+            $stmt->bind_param("iid", $cep1, $cep2, $distancia);
+            $stmt->execute();
+            $stmt->bind_param("iid", $cep2, $cep1, $distancia);
+            $stmt->execute();
         }
-
-        $stmt = $conn->prepare("INSERT INTO distancias (cep_inicio, cep_fim, distancia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE distancia = VALUES(distancia)");
-        $stmt->bind_param("iid", $cep1, $cep2, $distancia);
-        $stmt->execute();
-        $stmt->bind_param("iid", $cep2, $cep1, $distancia);
-        $stmt->execute();
-
 
 
         return false;
+    }
+
+    /**
+     * Salva no banco de dados a distância entre dois CEPs. Salvará duas vezes, invertendo o lado
+     *
+     * @param string $cep1 - CEP 1
+     * @param string $cep2 - CEP 2
+     * @param float $distancia - Distância entre os dois CEPs
+     * @return boolean - true se salvou com sucesso
+     */
+    public function distanciaCeps($cep1, $cep2)
+    {
+        $cep1 = DistanciaCeps::tratarCep($cep1);
+        $cep2 = DistanciaCeps::tratarCep($cep2);
+
+        $coordCep1 = self::coletarCoordenadas($cep1);
+        $coordCep2 = self::coletarCoordenadas($cep2);
+
+        $distancia = self::distanciaCoordenadas($coordCep1, $coordCep2);
+
+        self::salvarDistancia($cep1, $cep2, $distancia);
+
+        $response = [
+            'success' => true,
+        ];
+
+        return json_encode($response);
+    }
+
+    public function importarCeps()
+    {
+        $this->importacao = true;
+
+        if ($_FILES['arquivo']['error'] === UPLOAD_ERR_OK) {
+
+            $caminho = 'caminho/para/salvar/o/arquivo.csv';
+
+            move_uploaded_file($_FILES['arquivo']['tmp_name'], $caminho);
+
+
+            $arquivo = fopen($caminho, 'r');
+
+            while (($linha = fgetcsv($arquivo)) !== false) {
+
+                $cep1 = $linha[0];
+                $cep2 = $linha[1];
+
+                self::distanciaCeps($cep1, $cep2);
+            }
+
+            fclose($arquivo);
+        } else {
+            self::gerarErro("Erro ao importar arquivo");
+        }
     }
 
     /**
@@ -127,7 +210,7 @@ class DistanciaCeps
      * @return array latitude e longitude
      *
      */
-    public static function coletarCoordenadas($cep)
+    public function coletarCoordenadas($cep)
     {
         $cepAbertoToken = getenv('CEP_ABERTO_TOKEN');
         $url = self::$CEP_ABERTO_URL . $cep;
@@ -136,7 +219,16 @@ class DistanciaCeps
         curl_setopt($curl, CURLOPT_HTTPHEADER, array("Authorization: Token token=$cepAbertoToken"));
 
         $response = curl_exec($curl);
+
+        if (curl_errno($curl)) {
+            self::gerarErro("Erro ao consultar CEP");
+        }
+
         $data = json_decode($response, true);
+
+        if (!isset($data['latitude']) || !isset($data['longitude'])) {
+            self::gerarErro("CEP $cep não encontrada");
+        }
 
         $lat = $data['latitude'];
         $lon = $data['longitude'];
@@ -168,20 +260,22 @@ class DistanciaCeps
         $a = sin($dlat / 2) * sin($dlat / 2) + cos($lat1) * cos($lat2) * sin($dlon / 2) * sin($dlon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
-        $distance = (float) number_format(self::$R * $c, 2);
+        $distancia = (float) number_format(self::$R * $c, 2);
 
-        return $distance;
+        return $distancia;
     }
 
     /**
-     * Faz alguns tratamentos no CEP para retornar um CEP válido.
+     * Salva um log no banco de dados.
      *
      * @param string $nivel - número do nível (0: TRACE, 1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR)
-     * @param string $mensagem - CEP em seu formato de entrada
-     * @param array $contexto - CEP em seu formato de entrada
+     * @param string $mensagem - mensagem do log
+     * @param array $contexto - contexto do log
      */
-    public static function salvarLog($nivel, $mensagem, $contexto)
+    protected function salvarLog($nivel, $mensagem, $contexto = null)
     {
+        $contexto = $contexto ?? $this->data;
+
         switch ($nivel) {
             case 0:
                 $nivel_str = "TRACE";
@@ -216,6 +310,26 @@ class DistanciaCeps
         $stmt->close();
         $conn->close();
     }
+    /**
+     * Salva um log de erro no banco de dados e retorna um json de erro.
+     *
+     * @param string $mensagem - mensagem de erro
+     *
+     */
+    public function gerarErro($mensagem)
+    {
+        http_response_code(400);
+        echo json_encode(['error' => "$mensagem"]);
+        self::salvarLog(4, $mensagem);
+        self::toExit();
+    }
+
+    /**
+     * Busca os logs no banco de dados.
+     *
+     * @param string - json logs
+     *
+     */
 
     public static function buscarLogsMySQL()
     {
@@ -232,19 +346,90 @@ class DistanciaCeps
         $logsJson = json_encode($logs);
         return $logsJson;
     }
+
+    /**
+     * Impede que o código continue.
+     *
+     * @param string - json logs
+     *
+     */
+
+    protected function toExit()
+    {
+        if (!$this->importacao) {
+            exit;
+        } else {
+            $this->erro = true;
+        }
+    }
 }
 
-$cep1 = "01002-000";
-$cep2 = "89053-195";
-$cep1 = DistanciaCeps::tratarCep($cep1);
-$cep2 = DistanciaCeps::tratarCep($cep2);
-$coordenadas1 = DistanciaCeps::coletarCoordenadas($cep1);
-$coordenadas2 = DistanciaCeps::coletarCoordenadas($cep2);
-$distancia = DistanciaCeps::distanciaCoordenadas($coordenadas1, $coordenadas2);
+error_reporting(0);
 
-DistanciaCeps::salvarDistancia($cep1, $cep2, $distancia);
-DistanciaCeps::salvarLog(2, "Distância entre os CEPs salva com sucesso", array("cep1" => $cep1, "cep2" => $cep2, "distancia" => $distancia));
+$str_required = file_get_contents('php://input');
 
-header('Content-Type: application/json');
+if (strpos($str_required, 'importarCeps') !== false) {
 
-echo json_encode(DistanciaCeps::buscarDistanciasMySQL());
+    $partes = explode("\r\n", $str_required);
+    $comecar = false;
+    foreach ($partes as $parte) {
+
+        if (!(strpos($parte, 'cep1;cep2') !== false || $comecar)) {
+            continue;
+        }
+        if ($parte === '') {
+            break;
+        }
+        $comecar = true;
+        $linha = explode(";", $parte);
+        $data = [
+            "funcao" => "importarCeps",
+            "cep1"=> $linha[0],
+            "cep2"=> $linha[1]
+        ];
+
+        try {
+            $request = new DistanciaCeps($data);
+            $request->importacao = true;
+            $request->distanciaCeps($linha[0], $linha[1]);
+        } catch (Exception) {
+
+            $erros[] = 'Erro ao processar ceps: ' . $linha[0] . ',' . $linha[1];
+            continue;
+        }
+    }
+
+    echo json_encode(['erros' => $erros], true);
+    
+} else {
+
+    $data = json_decode($str_required, true);
+
+    $request = new DistanciaCeps($data);
+
+    $funcao = $data['funcao'];
+
+    switch ($funcao) {
+
+        case 'buscarDistancias':
+
+            echo $request->buscarDistanciasMySQL($data['cep1'], $data['cep2']);
+
+            break;
+
+        case 'salvarDistancia':
+
+            echo $request->distanciaCeps($data['cep1'], $data['cep2']);
+            break;
+
+
+        case 'logs':
+
+            echo $request->buscarLogsMySQL();
+
+            break;
+
+        default:
+            echo json_encode(['error' => 'funcao não encontrada']);
+    }
+}
