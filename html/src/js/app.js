@@ -132,6 +132,7 @@ new Vue({
                     else {
                         this.successPopup(data.success)
                         cacheCadastro.push({ cepModal1: this.cepModal1, cepModal2: this.cepModal2 })
+                        cacheCadastro.push({ cepModal1: this.cepModal2, cepModal2: this.cepModal1 })
                         localStorage.setItem('cadastro', JSON.stringify(cacheCadastro));
                     }
                     this.cadastrando = false
