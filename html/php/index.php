@@ -94,7 +94,7 @@ class DistanciaCeps
         }
 
         self::gerarErro("CEP $cep formato inválido");
-        
+
         return 0;
     }
     /**
@@ -319,7 +319,8 @@ class DistanciaCeps
             default:
                 $nivel_str = "UNKNOWN";
                 break;
-        };
+        }
+        ;
 
         $contexto_json = json_encode($contexto);
 
@@ -408,7 +409,8 @@ $str_required = file_get_contents('php://input');
 //Verifica se é uma impostação de CEPS
 if (strpos($str_required, 'importarCeps') !== false) {
 
-    $partes = explode("\r\n", $str_required);
+    $partes = preg_replace('/[\r\n\s\t.]/', " ", $str_required);
+    $partes = explode(" ", $partes);
     $comecar = false;
     $error = false;
     foreach ($partes as $parte) {
@@ -418,11 +420,11 @@ if (strpos($str_required, 'importarCeps') !== false) {
             continue;
         }
 
-        if (!$comecar) {
+        if (!$comecar || $parte == "") {
             continue;
         }
 
-        if ($parte === '') {
+        if ((strpos($parte, '--') !== false)) {
             break;
         }
 
@@ -454,7 +456,7 @@ if (strpos($str_required, 'importarCeps') !== false) {
         echo json_encode(['success' => 'Todos os CEPs fora cadastrados com sucesso!'], true);
     }
 
-//Valida se é outra função
+    //Valida se é outra função
 } else {
 
     $data = json_decode($str_required, true);

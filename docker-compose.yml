@@ -9,10 +9,12 @@ services:
     container_name: distance_cep
     image: distance-cep:1.0.0
     restart: always
-    working_dir: /app/src
     volumes:
       - ./src:/app/src
       - ./html:/app/html
+    ports:
+      - 8000:80
+
     deploy:
       resources:
         limits:
@@ -22,6 +24,7 @@ services:
       - mynetwork
     env_file:
       - .env
+    
 
   db:
     image: mysql
@@ -38,33 +41,6 @@ services:
       - mynetwork
     extra_hosts:
       - "my-mysql-alias:127.0.0.1"
-
-  apache:
-   image: php:8.3-apache
-   container_name: distance_cep_apache
-   restart: always
-   networks:
-      - mynetwork
-   ports:
-      - "8000:80"
-   volumes:
-      - ./src:/var/www/src
-      - ./html:/var/www/html
-      - ./src:/usr/local/apache2/htdocs/src
-      - ./src:/usr/local/apache2/htdocs/html
-   environment:
-      - APACHE_RUN_DIR=/var/run/apache2
-      - APACHE_PID_FILE=/var/run/apache2/apache2.pid
-      - APACHE_LOCK_DIR=/var/run/apache2
-      - APACHE_LOG_DIR=/var/log/apache2
-      - APACHE_RUN_USER=www-data
-      - APACHE_RUN_GROUP=www-data
-   command: >
-      bash -c "chmod -R 755 /usr/local/apache2/htdocs && chown -R www-data:www-data /usr/local/apache2/htdocs && apache2 -D FOREGROUND"
-   env_file:
-      - .env
-   depends_on:
-      - db
 
 networks:
   mynetwork:

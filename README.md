@@ -57,18 +57,10 @@ Abra o docker e o mantenha com janela aberta
 
 Na pasta raiz onde se encontra o repositório do projeto, abra um terminal e execute os comandos:
 ```cmd
-docker compose up -d --build
-docker compose run --rm distance_cep composer install
-docker compose run --rm distance_cep vendor/bin/phinx migrate -e test
+docker compose up -d
 ```
 
-No docker, acesse o terminal de 'distance_cep_apache' e execute:
-```cmd
-docker-php-ext-install mysqli
-```
 
-Reinicie o container 'distance_cep_apache'
 
-Tentei fazer funcionar pelo DockerFile ou pelo terminal do meu computador mas não tive sucesso.
 
 Acesse a aplicação pelo navegador: [localhost:8000](http://localhost:8000/)
