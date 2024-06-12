@@ -56,7 +56,7 @@ Certifique-se que o Docker esteja em andamento
 
 Na pasta raiz onde se encontra o repositório do projeto, abra um terminal e execute os comandos:
 ```cmd
-docker compose up -d
+docker compose up --build
 ```
 
 
