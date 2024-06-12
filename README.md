@@ -52,15 +52,12 @@ DB_PORT=3306
 DB_NAME=distance_cep
 ```
 
-Abra o docker e o mantenha com janela aberta
-
+Certifique-se que o Docker esteja em andamento
 
 Na pasta raiz onde se encontra o repositório do projeto, abra um terminal e execute os comandos:
 ```cmd
 docker compose up -d
 ```
-
-
 
 
 Acesse a aplicação pelo navegador: [localhost:8000](http://localhost:8000/)

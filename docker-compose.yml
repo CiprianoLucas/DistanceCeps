@@ -14,7 +14,6 @@ services:
       - ./html:/app/html
     ports:
       - 8000:80
-
     deploy:
       resources:
         limits:
@@ -24,7 +23,12 @@ services:
       - mynetwork
     env_file:
       - .env
-    
+    depends_on:
+      db:
+        condition: service_healthy
+
+    links:
+      - db
 
   db:
     image: mysql
@@ -41,6 +45,11 @@ services:
       - mynetwork
     extra_hosts:
       - "my-mysql-alias:127.0.0.1"
+    healthcheck:
+        test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+        timeout: 3s
+        retries: 10
+    
 
 networks:
   mynetwork:

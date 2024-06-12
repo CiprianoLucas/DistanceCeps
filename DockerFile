@@ -4,9 +4,9 @@ WORKDIR /var/www/src
 
 COPY src/ /var/www/src
 COPY html/ /var/www/html
-COPY setup.sh /var/www/html/setup.sh
+COPY setup.sh /var/www/src/setup.sh
 
-RUN chmod +x /var/www/html/setup.sh
+RUN chmod +x /var/www/src/setup.sh
 
 RUN apt-get update &&  apt-get install -y git curl zip unzip
 RUN docker-php-ext-install pdo_mysql pdo sockets mysqli
@@ -15,6 +15,4 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 EXPOSE 80
 
-ENTRYPOINT [ "/var/www/html/setup.sh" ]
-
-CMD ["apache2-foreground"]
+CMD [ "/var/www/src/setup.sh" ]
