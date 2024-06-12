@@ -52,7 +52,9 @@ DB_PORT=3306
 DB_NAME=distance_cep
 ```
 
-Certifique-se que o Docker esteja em andamento
+>Certifique-se que o Docker esteja em andamento.
+>
+>Certifique-se que o arquivo 'setup.sh', que se encontra dentro da pasta 'src' esteja no formato 'FL'.
 
 Na pasta raiz onde se encontra o repositório do projeto, abra um terminal e execute os comandos:
 ```cmd
