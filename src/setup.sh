@@ -1,4 +1,4 @@
 #!/bin/bash
 composer install
-vendor/bin/phinx migrate
+/var/www/src/vendor/bin/phinx migrate
 apache2-foreground

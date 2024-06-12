@@ -47,7 +47,7 @@ services:
       - "my-mysql-alias:127.0.0.1"
     healthcheck:
         test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-        timeout: 3s
+        timeout: 5s
         retries: 10
     
 

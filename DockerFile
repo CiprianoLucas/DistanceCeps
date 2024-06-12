@@ -4,7 +4,6 @@ WORKDIR /var/www/src
 
 COPY src/ /var/www/src
 COPY html/ /var/www/html
-COPY setup.sh /var/www/src/setup.sh
 
 RUN chmod +x /var/www/src/setup.sh
 
