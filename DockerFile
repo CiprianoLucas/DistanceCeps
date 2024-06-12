@@ -9,6 +9,7 @@ RUN chmod +x /var/www/src/setup.sh
 
 RUN apt-get update &&  apt-get install -y git curl zip unzip
 RUN docker-php-ext-install pdo_mysql pdo sockets mysqli
+RUN docker-php-ext-enable pdo_mysql mysqli
 
 COPY --from=composer /usr/bin/composer /usr/bin/composer
 
